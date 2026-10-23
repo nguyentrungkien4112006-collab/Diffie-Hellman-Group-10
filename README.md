@@ -4,7 +4,7 @@ Bộ mã nguồn thực thi hệ mã và chương trình demo cho bài tập nh�
 
 Giảng viên: **ThS. Nguyễn Quốc Thái**  
 Khoa: **Công nghệ Thông tin**  
-Trường: **Đại học Quốc gia TP.HCM - ĐHQG TP.HCM**
+Trường: **Đại học Kinh tế Quốc dân**
 
 ---
 
