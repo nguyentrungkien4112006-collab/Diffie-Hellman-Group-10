@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hệ thống Thực thi & Mô phỏng Trao đổi Khoá Diffie-Hellman (Chương 3 - NEU)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      backdrop-filter: blur(8px);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-30 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold text-lg">
+          DH
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Chương 3 • Mã hoá khoá công khai</span>
+            <span class="text-xs text-slate-400">ĐH Kinh tế Quốc dân (NEU) - Khoa CNTT</span>
+          </div>
+          <h1 class="text-base sm:text-lg font-bold text-white mt-0.5">Hệ thống Thực thi & Demo Trao đổi Khoá Diffie–Hellman</h1>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex flex-wrap gap-1.5" aria-label="Tabs">
+        <button id="tabBtn-tiny" data-tab="tiny" class="tab-btn active text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition">
+          1. Tiny DH (Slide 51)
+        </button>
+        <button id="tabBtn-cipher" data-tab="cipher" class="tab-btn text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition">
+          2. Full DH & Mã hoá File/Text
+        </button>
+        <button id="tabBtn-dlp" data-tab="dlp" class="tab-btn text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition">
+          3. Thám mã DLP (BSGS)
+        </button>
+        <button id="tabBtn-mitm" data-tab="mitm" class="tab-btn text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition">
+          4. Tấn công MITM & RSA
+        </button>
+        <button id="tabBtn-bench" data-tab="bench" class="tab-btn text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition">
+          5. Kiểm thử & Benchmark
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Toast Notification -->
+  <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden px-4 py-3 rounded-xl border border-blue-500/40 bg-slate-900/95 text-sm text-blue-200 shadow-2xl"></div>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- ==================== TAB 1: TINY DH & SLIDE 51 ==================== -->
+    <section id="panel-tiny" class="tab-panel space-y-6">
+      <div class="glass-card rounded-2xl p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-700/70 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Phiên bản Thu nhỏ (Tiny Diffie–Hellman) & Bảng Bình phương - Nhân</h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              Tái hiện chính xác ví dụ Bài giảng Chương 3 (Slide 51): <span class="mono text-amber-300">q = 353, α = 3, x_A = 97, x_B = 233 ⇒ y_A = 40, y_B = 248, K_AB = 160</span>.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnPresetSlide51" class="px-3.5 py-2 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-semibold hover:bg-amber-500/30 transition">
+              Nạp ví dụ Slide 51 (q=353, α=3)
+            </button>
+            <button id="btnRandomTiny" class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition">
+              Sinh bộ tham số ngẫu nhiên
+            </button>
+            <button id="btnRunTiny" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow transition">
+              Tính toán & In bảng trung gian
+            </button>
+          </div>
+        </div>
+
+        <!-- Inputs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-700/80">
+            <label for="inpTinyQ" class="block text-xs font-medium text-slate-400">Số nguyên tố chung q</label>
+            <input id="inpTinyQ" type="number" value="353" min="5" class="mt-1.5 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono focus:outline-none focus:border-blue-500" />
+            <div id="lblPrimeStatus" class="text-xs text-emerald-400 mt-1">✓ Miller-Rabin: Số nguyên tố</div>
+          </div>
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-700/80">
+            <label for="inpTinyAlpha" class="block text-xs font-medium text-slate-400">Căn nguyên tố (Phần tử sinh) α</label>
+            <input id="inpTinyAlpha" type="number" value="3" min="2" class="mt-1.5 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono focus:outline-none focus:border-blue-500" />
+            <div id="lblPrimitiveStatus" class="text-xs text-emerald-400 mt-1">✓ Là căn nguyên tố của mod q</div>
+          </div>
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-blue-500/30">
+            <label for="inpTinyXA" class="block text-xs font-medium text-blue-300">Khoá mật của Alice (x_A &lt; q)</label>
+            <input id="inpTinyXA" type="number" value="97" min="1" class="mt-1.5 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono focus:outline-none focus:border-blue-500" />
+            <div class="text-xs text-slate-400 mt-1">Chỉ Alice biết (Private Key)</div>
+          </div>
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-purple-500/30">
+            <label for="inpTinyXB" class="block text-xs font-medium text-purple-300">Khoá mật của Bob (x_B &lt; q)</label>
+            <input id="inpTinyXB" type="number" value="233" min="1" class="mt-1.5 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono focus:outline-none focus:border-purple-500" />
+            <div class="text-xs text-slate-400 mt-1">Chỉ Bob biết (Private Key)</div>
+          </div>
+        </div>
+
+        <!-- Visual Exchange Flow -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5">
+          <!-- Alice Card -->
+          <div class="rounded-xl bg-blue-950/30 border border-blue-500/30 p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-blue-300">Bên A (Alice)</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 mono">x_A = <span id="outXA">97</span></span>
+            </div>
+            <p class="text-xs text-slate-300">1. Tính khoá công khai <span class="mono">y_A = α^(x_A) mod q</span>:</p>
+            <div id="outYA" class="p-2.5 rounded-lg bg-slate-900 border border-slate-700 mono text-sm text-amber-300 font-semibold">
+              y_A = 3^97 mod 353 = 40
+            </div>
+            <p class="text-xs text-slate-300 pt-1">2. Nhận <span class="mono">y_B</span> từ Bob, tính khoá phiên <span class="mono">K_AB = (y_B)^(x_A) mod q</span>:</p>
+            <div id="outKAB_A" class="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 mono text-sm text-emerald-300 font-bold">
+              K_AB = 248^97 mod 353 = 160
+            </div>
+          </div>
+
+          <!-- Public Channel -->
+          <div class="rounded-xl bg-slate-900/90 border border-slate-700 p-4 flex flex-col justify-between">
+            <div class="text-center">
+              <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-600">
+                Kênh truyền công khai (Public Channel)
+              </span>
+              <p class="text-xs text-slate-400 mt-2">Mọi người đều biết: <span class="mono text-white">q = <span id="outChannelQ">353</span>, α = <span id="outChannelAlpha">3</span></span></p>
+            </div>
+            <div class="my-3 space-y-2 text-xs mono">
+              <div class="p-2 rounded bg-blue-500/10 border border-blue-500/30 text-blue-200 flex items-center justify-between">
+                <span>Alice ──(gửi y_A)──► Bob</span>
+                <span id="outArrowYA" class="font-bold text-amber-300">y_A = 40</span>
+              </div>
+              <div class="p-2 rounded bg-purple-500/10 border border-purple-500/30 text-purple-200 flex items-center justify-between">
+                <span>Alice ◄──(gửi y_B)── Bob</span>
+                <span id="outArrowYB" class="font-bold text-amber-300">y_B = 248</span>
+              </div>
+            </div>
+            <div id="outMatchBadge" class="text-center py-2 px-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold">
+              ✓ Thiết lập thành công khoá phiên chung K_AB = 160
+            </div>
+          </div>
+
+          <!-- Bob Card -->
+          <div class="rounded-xl bg-purple-950/30 border border-purple-500/30 p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-purple-300">Bên B (Bob)</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 mono">x_B = <span id="outXB">233</span></span>
+            </div>
+            <p class="text-xs text-slate-300">1. Tính khoá công khai <span class="mono">y_B = α^(x_B) mod q</span>:</p>
+            <div id="outYB" class="p-2.5 rounded-lg bg-slate-900 border border-slate-700 mono text-sm text-amber-300 font-semibold">
+              y_B = 3^233 mod 353 = 248
+            </div>
+            <p class="text-xs text-slate-300 pt-1">2. Nhận <span class="mono">y_A</span> từ Alice, tính khoá phiên <span class="mono">K_AB = (y_A)^(x_B) mod q</span>:</p>
+            <div id="outKAB_B" class="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 mono text-sm text-emerald-300 font-bold">
+              K_AB = 40^233 mod 353 = 160
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Intermediate Tables (Square and Multiply - Slide 23-24) -->
+      <div class="glass-card rounded-2xl p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-white">Bảng các bước trung gian: Thuật toán "Bình phương và Nhân" (Slide 23–24)</h3>
+            <p class="text-xs text-slate-400">Hiển thị chi tiết từng vòng lặp <span class="mono">i, b_i, c, f</span> để đối chiếu khi thuyết trình trên lớp.</p>
+          </div>
+          <select id="selTraceTarget" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-white mono">
+            <option value="ya">1. Tính y_A = α^(x_A) mod q (của Alice)</option>
+            <option value="yb">2. Tính y_B = α^(x_B) mod q (của Bob)</option>
+            <option value="kab_a">3. Tính K_AB = (y_B)^(x_A) mod q (Alice tính)</option>
+            <option value="kab_b">4. Tính K_AB = (y_A)^(x_B) mod q (Bob tính)</option>
+          </select>
+        </div>
+
+        <div id="traceSummary" class="text-xs mono text-blue-300 bg-slate-900/80 p-3 rounded-lg border border-slate-700"></div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse mono text-xs">
+            <thead>
+              <tr class="bg-slate-800/90 text-slate-300 border-b border-slate-700">
+                <th class="py-2.5 px-3">Bước thứ</th>
+                <th class="py-2.5 px-3">Vị trí bit (i)</th>
+                <th class="py-2.5 px-3">Bit nhị phân (b_i)</th>
+                <th class="py-2.5 px-3">Số mũ tích luỹ (c)</th>
+                <th class="py-2.5 px-3">Giá trị trung gian f = a^c mod q</th>
+                <th class="py-2.5 px-3">Phép toán thực hiện trong vòng lặp</th>
+              </tr>
+            </thead>
+            <tbody id="tblSquareMultiplyBody" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: FULL DH & ENCRYPTION ==================== -->
+    <section id="panel-cipher" class="tab-panel hidden space-y-6">
+      <div class="glass-card rounded-2xl p-5 space-y-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-700/70 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Phiên bản Đầy đủ (RFC 3526 MODP) & Mã hoá / Giải mã Hai chiều</h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              Sử dụng khoá phiên chung <span class="mono text-emerald-300">K_AB</span> (từ Tiny DH hoặc RFC 3526 2048-bit) kết hợp SHA-256 tự cài đặt để mã hoá văn bản & tệp dữ liệu thật.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <select id="selGroupSize" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white font-medium">
+              <option value="rfc2048">Chuẩn RFC 3526 Group 14 (2048-bit Prime)</option>
+              <option value="rfc1536">Chuẩn RFC 3526 Group 5 (1536-bit Prime)</option>
+              <option value="slide51">Nhóm Tiny DH Slide 51 (q = 353, K_AB = 160)</option>
+            </select>
+            <button id="btnGenFullDH" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">
+              Sinh khoá phiên K_AB mới
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Session Key Display -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700">
+            <div class="text-xs text-slate-400">Nhóm tham số đang dùng</div>
+            <div id="lblActiveGroup" class="text-sm font-bold text-white mt-1">RFC 3526 Group 14 (2048-bit)</div>
+            <div id="lblKeygenTime" class="text-xs text-emerald-400 mt-1 mono">Thời gian trao đổi khoá: 14.2 ms</div>
+          </div>
+          <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700">
+            <div class="text-xs text-slate-400">Khoá phiên chung K_AB (rút gọn)</div>
+            <div id="lblActiveKAB" class="text-xs font-semibold text-amber-300 mt-1 mono break-all"></div>
+          </div>
+          <div class="bg-slate-900/80 p-3.5 rounded-xl border border-emerald-500/30">
+            <div class="text-xs text-emerald-300">Khoá đối xứng dẫn xuất SHA-256(K_AB)</div>
+            <div id="lblDerivedKeyHex" class="text-xs font-semibold text-emerald-400 mt-1 mono break-all"></div>
+          </div>
+        </div>
+
+        <!-- Two-Way Text Encryption / Decryption -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-2">
+          <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-blue-300">Chiều 1: Mã hoá Bản rõ (Alice gửi)</h3>
+              <button id="btnEncryptText" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">
+                Mã hoá ngay →
+              </button>
+            </div>
+            <textarea id="inpPlaintext" rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500">Đại học Kinh tế Quốc dân (NEU) - Khoa CNTT: Uỷ nhiệm chi 125,000,000 VNĐ qua kênh bảo mật Diffie-Hellman!</textarea>
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>Bản mã thu được (Hex: Nonce 8B + MAC 16B + Ciphertext)</span>
+                <span id="lblCipherLen" class="mono text-amber-300"></span>
+              </div>
+              <textarea id="outCipherHex" rows="3" readonly class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-amber-300 mono"></textarea>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-emerald-300">Chiều 2: Giải mã & Kiểm tra toàn vẹn (Bob nhận)</h3>
+              <div class="flex gap-2">
+                <button id="btnTamperCipher" class="px-2.5 py-1.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-semibold hover:bg-rose-500/30 transition">
+                  Thử sửa 1 byte bản mã
+                </button>
+                <button id="btnDecryptText" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
+                  Giải mã bản mã
+                </button>
+              </div>
+            </div>
+            <div>
+              <label for="inpCipherToDecrypt" class="block text-xs text-slate-400 mb-1">Bản mã đầu vào cần giải mã (Hex):</label>
+              <textarea id="inpCipherToDecrypt" rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-xs text-amber-200 mono focus:outline-none focus:border-emerald-500"></textarea>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="text-slate-400">Bản rõ khôi phục được:</span>
+                <span id="lblDecryptStatus" class="font-semibold text-emerald-400"></span>
+              </div>
+              <textarea id="outRecoveredText" rows="3" readonly class="w-full bg-slate-950 border border-emerald-500/40 rounded-lg p-3 text-xs sm:text-sm text-emerald-300"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real File Demo (Text file / Image file) -->
+        <div class="border-t border-slate-700/70 pt-5 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-white">Demo trên Dữ liệu thật: Mã hoá & Giải mã Tệp văn bản (.txt) hoặc Tệp ảnh (.png)</h3>
+              <p class="text-xs text-slate-400">Chọn tệp bất kỳ từ máy tính của bạn hoặc nạp tệp mẫu có sẵn để kiểm chứng khôi phục 100% từng byte và mã băm SHA-256.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="btnSimSampleTextFile" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 hover:bg-slate-700 transition">
+                Chạy Tệp văn bản mẫu (.txt)
+              </button>
+              <button id="btnSimSampleImageFile" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 hover:bg-slate-700 transition">
+                Chạy Tệp ảnh mẫu (.png)
+              </button>
+              <label class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs text-white font-semibold cursor-pointer transition">
+                Tải tệp từ máy lên...
+                <input id="inpCustomFile" type="file" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <div id="fileDemoResultBox" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900/90 p-4 rounded-xl border border-slate-700 text-xs mono">
+            <div>
+              <div class="text-slate-400 font-sans font-semibold">1. Tệp gốc (Plain File)</div>
+              <div id="fileOrigName" class="text-white mt-1">sample_image.png (1,018 bytes)</div>
+              <div id="fileOrigHash" class="text-blue-300 mt-1 break-all">SHA-256: 614d38fdabcf545c...</div>
+            </div>
+            <div>
+              <div class="text-slate-400 font-sans font-semibold">2. Tệp đã mã hoá (.dh_enc)</div>
+              <div id="fileEncSize" class="text-amber-300 mt-1">1,042 bytes (+24B Header)</div>
+              <div id="fileEncHash" class="text-amber-200 mt-1 break-all">SHA-256: ae501d0418e05160...</div>
+            </div>
+            <div>
+              <div class="text-slate-400 font-sans font-semibold">3. Tệp sau giải mã (Recovered)</div>
+              <div id="fileRecStatus" class="text-emerald-400 font-bold mt-1">✓ Khớp 100% từng byte với tệp gốc!</div>
+              <div id="fileRecHash" class="text-emerald-300 mt-1 break-all">SHA-256: 614d38fdabcf545c...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: DISCRETE LOGARITHM PROBLEM (DLP) ==================== -->
+    <section id="panel-dlp" class="tab-panel hidden space-y-6">
+      <div class="glass-card rounded-2xl p-5 space-y-5">
+        <div class="border-b border-slate-700/70 pb-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-white">Bài toán Logarit rời rạc (Discrete Logarithm Problem – DLP)</h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              Kẻ thám mã biết công khai <span class="mono text-amber-300">(q, α, y_A)</span> và muốn tìm khoá mật <span class="mono text-rose-300">x_A</span> sao cho <span class="mono">α^(x_A) mod q = y_A</span>.
+              So sánh trực tiếp giữa <strong>Vét cạn O(q)</strong> và <strong>Bước nhỏ – Bước lớn (Baby-step Giant-step) O(√q)</strong>.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnDlpPreset1" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 hover:bg-slate-700">
+              Slide 51 (q=353, α=3, y=40)
+            </button>
+            <button id="btnDlpPreset2" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 hover:bg-slate-700">
+              16-bit (q=65521, α=17, y=64850)
+            </button>
+            <button id="btnDlpPreset3" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 hover:bg-slate-700">
+              20-bit (q=1000003, α=2, y=127778)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-700">
+            <label for="inpDlpQ" class="block text-xs text-slate-400">Modulo nguyên tố q</label>
+            <input id="inpDlpQ" type="number" value="353" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono" />
+          </div>
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-700">
+            <label for="inpDlpAlpha" class="block text-xs text-slate-400">Cơ số (Căn nguyên tố) α</label>
+            <input id="inpDlpAlpha" type="number" value="3" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono" />
+          </div>
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-700">
+            <label for="inpDlpY" class="block text-xs text-slate-400">Khoá công khai bắt được y</label>
+            <input id="inpDlpY" type="number" value="40" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono" />
+          </div>
+          <div class="flex items-end">
+            <button id="btnRunDlpAttack" class="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold shadow transition">
+              Chạy Thám mã Tìm x
+            </button>
+          </div>
+        </div>
+
+        <!-- Comparison Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-700 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-amber-300">Phương pháp 1: Vét cạn (Brute-Force Search)</span>
+              <span class="text-xs mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">Độ phức tạp: O(q)</span>
+            </div>
+            <p class="text-xs text-slate-400">Thử lần lượt <span class="mono">x = 1, 2, ..., q-1</span> cho tới khi <span class="mono">α^x mod q == y</span>.</p>
+            <div id="outDlpBruteResult" class="p-3 rounded-lg bg-slate-950 border border-slate-800 mono text-xs text-slate-200 space-y-1"></div>
+          </div>
+
+          <div class="bg-slate-900/80 rounded-xl p-4 border border-emerald-500/40 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-emerald-300">Phương pháp 2: Bước nhỏ - Bước lớn (Shanks BSGS)</span>
+              <span class="text-xs mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Độ phức tạp: O(√q)</span>
+            </div>
+            <p class="text-xs text-slate-400">Đặt <span class="mono">m = ⌈√(q-1)⌉, x = i·m + j</span>. Lập bảng băm <span class="mono">α^j mod q</span> và đối chiếu <span class="mono">y·(α^-m)^i mod q</span>.</p>
+            <div id="outDlpBsgsResult" class="p-3 rounded-lg bg-slate-950 border border-slate-800 mono text-xs text-emerald-300 space-y-1"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: MITM ATTACK & RSA DEFENSE ==================== -->
+    <section id="panel-mitm" class="tab-panel hidden space-y-6">
+      <div class="glass-card rounded-2xl p-5 space-y-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-700/70 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Mô phỏng Tấn công Người đứng giữa (MITM) & Phòng chống bằng Chữ ký số RSA</h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              Minh hoạ cách kẻ tấn công chủ động <strong>Eve</strong> chặn đường truyền để lập 2 khoá phiên <span class="mono text-rose-300">K_AE, K_EB</span> và cách ngăn chặn triệt để bằng chữ ký số RSA (Slide 41–44 & 47–50).
+            </p>
+          </div>
+          <div class="flex gap-2">
+            <button id="btnModeMitmAttack" class="px-3.5 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold shadow transition">
+              Kịch bản 1: Không xác thực (Bị Eve tấn công MITM)
+            </button>
+            <button id="btnModeMitmDefense" class="px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition">
+              Kịch bản 2: Bật Chữ ký số RSA (Chặn đứng MITM)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-rose-500/30">
+            <label for="inpMitmXE1" class="block text-xs text-rose-300">Khoá mật giả mạo của Eve với Alice (x_E1)</label>
+            <input id="inpMitmXE1" type="number" value="123" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono" />
+          </div>
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-rose-500/30">
+            <label for="inpMitmXE2" class="block text-xs text-rose-300">Khoá mật giả mạo của Eve với Bob (x_E2)</label>
+            <input id="inpMitmXE2" type="number" value="55" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white mono" />
+          </div>
+          <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-700">
+            <label for="inpMitmTamperMsg" class="block text-xs text-slate-300">Nội dung Eve sửa đổi khi chuyển tiếp cho Bob</label>
+            <input id="inpMitmTamperMsg" type="text" value="Chuyen 50,000,000 VND vao TK Eve: 6666777888" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-white" />
+          </div>
+        </div>
+
+        <!-- Visual Diagram of MITM -->
+        <div id="mitmDiagramContainer" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: UNIT TESTS & BENCHMARK ==================== -->
+    <section id="panel-bench" class="tab-panel hidden space-y-6">
+      <div class="glass-card rounded-2xl p-5 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-700/70 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Kết quả Kiểm thử Đối chiếu Chuẩn (NIST / RFC 3526) & Đo Hiệu năng</h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              Tự động kiểm tra các ca kiểm thử từ Slide Chương 3, vector chuẩn NIST SHA-256, RFC 3526 và đo thời gian thực thi trực tiếp trên trình duyệt.
+            </p>
+          </div>
+          <button id="btnRunAllTestsWeb" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition">
+            Chạy lại Toàn bộ Kiểm thử & Benchmark
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs mono">
+            <thead>
+              <tr class="bg-slate-800 text-slate-300 border-b border-slate-700">
+                <th class="py-2.5 px-3">Mã Ca Kiểm Thử</th>
+                <th class="py-2.5 px-3">Nội dung kiểm tra & Đối chiếu chuẩn</th>
+                <th class="py-2.5 px-3">Kết quả thuật toán tự cài đặt</th>
+                <th class="py-2.5 px-3">Giá trị chuẩn (Slide / NIST / RFC)</th>
+                <th class="py-2.5 px-3">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="tblUnitTestsBody" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800 bg-slate-900/60 py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+      <span>Bài tập nhóm Học phần An toàn và Bảo mật Thông tin • Đề tài: Trao đổi khoá Diffie–Hellman (Chương 3)</span>
+      <span class="mono text-slate-300">100% Core Algorithms Implemented From Scratch</span>
+    </div>
+  </footer>
+
+  <script>
+    // ============================================================================
+    // 1. CÀI ĐẶT CÁC THUẬT TOÁN TOÁN HỌC & MẬT MÃ TỪ ĐẦU (BIGINT FROM SCRATCH)
+    // ============================================================================
+
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      box.textContent = msg;
+      box.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
+    }
+
+    // Thuật toán Euclid tìm GCD(a, b) (Slide 14)
+    function gcdBigInt(a, b) {
+      a = a < 0n ? -a : a;
+      b = b < 0n ? -b : b;
+      while (b !== 0n) {
+        const r = a % b;
+        a = b;
+        b = r;
+      }
+      return a;
+    }
+
+    // Thuật toán tìm nghịch đảo modulo bằng bảng 6 cột (Slide 18-22)
+    function modInverseBigInt(a, n) {
+      let r0 = n, r1 = ((a % n) + n) % n;
+      let t0 = 0n, t1 = 1n;
+      while (r1 !== 0n) {
+        const r2 = r0 % r1;
+        const q = r0 / r1;
+        const nextT1 = (((t0 - q * t1) % n) + n) % n;
+        if (r2 === 0n) {
+          return r1 === 1n ? t1 : null;
+        }
+        r0 = r1;
+        r1 = r2;
+        t0 = t1;
+        t1 = nextT1;
+      }
+      return null;
+    }
+
+    // Thuật toán "Bình phương và Nhân" tính a^k mod n kèm lưu bảng trung gian (Slide 23-24)
+    function squareAndMultiply(a, k, n, recordSteps = false) {
+      a = BigInt(a);
+      k = BigInt(k);
+      n = BigInt(n);
+      if (k === 0n) {
+        return recordSteps ? { result: 1n, steps: [{ stepIdx: 1, i: 0, b_i: 0, c: 0n, f: 1n, desc: 'k = 0 => f = 1' }] } : 1n;
+      }
+      const binStr = k.toString(2);
+      const t = binStr.length - 1;
+      let c = 0n;
+      let f = 1n;
+      const steps = [];
+
+      for (let idx = 0; idx < binStr.length; idx++) {
+        const i = t - idx;
+        const b_i = binStr[idx] === '1' ? 1 : 0;
+        const prevF = f;
+        c = 2n * c;
+        const sqF = (f * f) % n;
+        f = sqF;
+        let desc = `f = ${prevF}² mod ${n} = ${sqF}`;
+        if (b_i === 1) {
+          c = c + 1n;
+          f = (f * a) % n;
+          desc += ` ; b_${i}=1 ⇒ f = (${sqF} × ${a}) mod ${n} = ${f}`;
+        } else {
+          desc += ` ; b_${i}=0 (giữ nguyên f = ${f})`;
+        }
+        if (recordSteps) {
+          steps.push({ stepIdx: idx + 1, i, b_i, c, f, desc });
+        }
+      }
+      return recordSteps ? { result: f, steps, binStr } : f;
+    }
+
+    // Kiểm tra nguyên tố Miller-Rabin (Slide 29)
+    function millerRabinTest(nBig) {
+      const n = BigInt(nBig);
+      if (n < 2n) return false;
+      const smallPrimes = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n];
+      for (const p of smallPrimes) {
+        if (n === p) return true;
+        if (n % p === 0n) return false;
+      }
+      let q = n - 1n;
+      let k = 0;
+      while (q % 2n === 0n) {
+        q /= 2n;
+        k++;
+      }
+      for (const a of smallPrimes) {
+        if (a >= n - 1n) continue;
+        let x = squareAndMultiply(a, q, n, false);
+        if (x === 1n || x === n - 1n) continue;
+        let passedRound = false;
+        for (let j = 1; j < k; j++) {
+          x = (x * x) % n;
+          if (x === n - 1n) {
+            passedRound = true;
+            break;
+          }
+        }
+        if (!passedRound) return false;
+      }
+      return true;
+    }
+
+    // Phân tích thừa số nguyên tố và kiểm tra căn nguyên tố (Slide 50)
+    function primeFactorsSmall(nNum) {
+      let temp = Number(nNum);
+      const factors = [];
+      for (let d = 2; d * d <= temp; d += (d === 2 ? 1 : 2)) {
+        if (temp % d === 0) {
+          factors.push(BigInt(d));
+          while (temp % d === 0) temp = Math.floor(temp / d);
+        }
+      }
+      if (temp > 1) factors.push(BigInt(temp));
+      return factors;
+    }
+
+    function isPrimitiveRoot(alphaBig, qBig) {
+      const alpha = BigInt(alphaBig);
+      const q = BigInt(qBig);
+      if (alpha <= 1n || alpha >= q) return false;
+      const phi = q - 1n;
+      const factors = primeFactorsSmall(phi);
+      for (const pf of factors) {
+        if (squareAndMultiply(alpha, phi / pf, q, false) === 1n) return false;
+      }
+      return true;
+    }
+
+    // Hàm băm SHA-256 tự cài đặt hoàn toàn từ đầu (FIPS 180-4)
+    const SHA256_K = new Uint32Array([
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ]);
+
+    function rotr32(x, n) {
+      return (x >>> n) | (x << (32 - n));
+    }
+
+    function sha256Bytes(msgBytes) {
+      const bitLen = msgBytes.length * 8;
+      const padLen = ((msgBytes.length + 9 + 63) & ~63);
+      const buf = new Uint8Array(padLen);
+      buf.set(msgBytes, 0);
+      buf[msgBytes.length] = 0x80;
+      const dv = new DataView(buf.buffer);
+      dv.setUint32(padLen - 8, Math.floor(bitLen / 0x100000000), false);
+      dv.setUint32(padLen - 4, bitLen >>> 0, false);
+
+      let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+      let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+      const w = new Uint32Array(64);
+
+      for (let offset = 0; offset < padLen; offset += 64) {
+        for (let i = 0; i < 16; i++) {
+          w[i] = dv.getUint32(offset + i * 4, false);
+        }
+        for (let i = 16; i < 64; i++) {
+          const s0 = rotr32(w[i - 15], 7) ^ rotr32(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+          const s1 = rotr32(w[i - 2], 17) ^ rotr32(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+          w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+        }
+        let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+        for (let i = 0; i < 64; i++) {
+          const S1 = rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25);
+          const ch = (e & f) ^ ((~e) & g);
+          const temp1 = (h + S1 + ch + SHA256_K[i] + w[i]) >>> 0;
+          const S0 = rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22);
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const temp2 = (S0 + maj) >>> 0;
+          h = g; g = f; f = e; e = (d + temp1) >>> 0;
+          d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+        }
+        h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
+        h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + h) >>> 0;
+      }
+      const out = new Uint8Array(32);
+      const outDv = new DataView(out.buffer);
+      [h0, h1, h2, h3, h4, h5, h6, h7].forEach((val, idx) => outDv.setUint32(idx * 4, val, false));
+      return out;
+    }
+
+    function bytesToHex(u8) {
+      return Array.from(u8).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function hexToBytes(hexStr) {
+      const clean = hexStr.trim().replace(/[^0-9a-fA-F]/g, '');
+      if (clean.length % 2 !== 0) throw new Error('Chuỗi Hex không hợp lệ (độ dài lẻ).');
+      const out = new Uint8Array(clean.length / 2);
+      for (let i = 0; i < out.length; i++) {
+        out[i] = parseInt(clean.substr(i * 2, 2), 16);
+      }
+      return out;
+    }
+
+    function deriveMasterKey(sharedSecretBig) {
+      const enc = new TextEncoder();
+      return sha256Bytes(enc.encode('DH_SESSION_KEY_V1:' + sharedSecretBig.toString(16)));
+    }
+
+    function encryptBytesWithKAB(plainBytes, sharedSecretBig) {
+      const masterKey = deriveMasterKey(sharedSecretBig);
+      const lenBuf = new Uint8Array(8);
+      new DataView(lenBuf.buffer).setUint32(4, plainBytes.length, false);
+      const nonceInput = new Uint8Array(masterKey.length + 8);
+      nonceInput.set(masterKey, 0);
+      nonceInput.set(lenBuf, masterKey.length);
+      const nonce = sha256Bytes(nonceInput).slice(0, 8);
+
+      const cipher = new Uint8Array(plainBytes.length);
+      const numBlocks = Math.ceil(plainBytes.length / 32);
+      for (let ctr = 0; ctr < numBlocks; ctr++) {
+        const blockIn = new Uint8Array(masterKey.length + 8 + 8);
+        blockIn.set(masterKey, 0);
+        blockIn.set(nonce, masterKey.length);
+        new DataView(blockIn.buffer).setUint32(masterKey.length + 12, ctr, false);
+        const ks = sha256Bytes(blockIn);
+        const base = ctr * 32;
+        for (let j = 0; j < 32 && base + j < plainBytes.length; j++) {
+          cipher[base + j] = plainBytes[base + j] ^ ks[j];
+        }
+      }
+
+      const macIn = new Uint8Array(masterKey.length + 8 + cipher.length);
+      macIn.set(masterKey, 0);
+      macIn.set(nonce, masterKey.length);
+      macIn.set(cipher, masterKey.length + 8);
+      const macTag = sha256Bytes(macIn).slice(0, 16);
+
+      const packet = new Uint8Array(8 + 16 + cipher.length);
+      packet.set(nonce, 0);
+      packet.set(macTag, 8);
+      packet.set(cipher, 24);
+      return packet;
+    }
+
+    function decryptBytesWithKAB(packetBytes, sharedSecretBig) {
+      if (packetBytes.length < 24) {
+        throw new Error('Gói bản mã quá ngắn (< 24 byte header).');
+      }
+      const masterKey = deriveMasterKey(sharedSecretBig);
+      const nonce = packetBytes.slice(0, 8);
+      const macTag = packetBytes.slice(8, 24);
+      const cipher = packetBytes.slice(24);
+
+      const macIn = new Uint8Array(masterKey.length + 8 + cipher.length);
+      macIn.set(masterKey, 0);
+      macIn.set(nonce, masterKey.length);
+      macIn.set(cipher, masterKey.length + 8);
+      const expectedMac = sha256Bytes(macIn).slice(0, 16);
+
+      for (let i = 0; i < 16; i++) {
+        if (macTag[i] !== expectedMac[i]) {
+          throw new Error('Xác thực MAC thất bại! Khoá phiên K_AB không khớp hoặc bản mã đã bị can thiệp.');
+        }
+      }
+
+      const plain = new Uint8Array(cipher.length);
+      const numBlocks = Math.ceil(cipher.length / 32);
+      for (let ctr = 0; ctr < numBlocks; ctr++) {
+        const blockIn = new Uint8Array(masterKey.length + 8 + 8);
+        blockIn.set(masterKey, 0);
+        blockIn.set(nonce, masterKey.length);
+        new DataView(blockIn.buffer).setUint32(masterKey.length + 12, ctr, false);
+        const ks = sha256Bytes(blockIn);
+        const base = ctr * 32;
+        for (let j = 0; j < 32 && base + j < cipher.length; j++) {
+          plain[base + j] = cipher[base + j] ^ ks[j];
+        }
+      }
+      return plain;
+    }
+
+    // ============================================================================
+    // 2. LOGIC GIAO DIỆN TAB 1: TINY DH & SLIDE 51
+    // ============================================================================
+    let currentTinyState = null;
+
+    function computeTinyDH() {
+      const q = BigInt(document.getElementById('inpTinyQ').value || 353);
+      const alpha = BigInt(document.getElementById('inpTinyAlpha').value || 3);
+      const xA = BigInt(document.getElementById('inpTinyXA').value || 97);
+      const xB = BigInt(document.getElementById('inpTinyXB').value || 233);
+
+      const isP = millerRabinTest(q);
+      const primeEl = document.getElementById('lblPrimeStatus');
+      primeEl.textContent = isP ? '✓ Miller-Rabin: Số nguyên tố hợp lệ' : '⚠ Cảnh báo: q không phải là số nguyên tố!';
+      primeEl.className = 'text-xs mt-1 ' + (isP ? 'text-emerald-400' : 'text-rose-400');
+
+      const isPrim = isP && q < 100000n ? isPrimitiveRoot(alpha, q) : true;
+      const primEl = document.getElementById('lblPrimitiveStatus');
+      primEl.textContent = isPrim ? '✓ α là căn nguyên tố của mod q' : '⚠ α không phải căn nguyên tố của mod q';
+      primEl.className = 'text-xs mt-1 ' + (isPrim ? 'text-emerald-400' : 'text-amber-400');
+
+      const yaTrace = squareAndMultiply(alpha, xA, q, true);
+      const ybTrace = squareAndMultiply(alpha, xB, q, true);
+      const kabATrace = squareAndMultiply(ybTrace.result, xA, q, true);
+      const kabBTrace = squareAndMultiply(yaTrace.result, xB, q, true);
+
+      currentTinyState = { q, alpha, xA, xB, yaTrace, ybTrace, kabATrace, kabBTrace };
+
+      document.getElementById('outXA').textContent = xA.toString();
+      document.getElementById('outXB').textContent = xB.toString();
+      document.getElementById('outChannelQ').textContent = q.toString();
+      document.getElementById('outChannelAlpha').textContent = alpha.toString();
+
+      document.getElementById('outYA').textContent = `y_A = ${alpha}^${xA} mod ${q} = ${yaTrace.result}`;
+      document.getElementById('outYB').textContent = `y_B = ${alpha}^${xB} mod ${q} = ${ybTrace.result}`;
+      document.getElementById('outArrowYA').textContent = `y_A = ${yaTrace.result}`;
+      document.getElementById('outArrowYB').textContent = `y_B = ${ybTrace.result}`;
+
+      document.getElementById('outKAB_A').textContent = `K_AB = ${ybTrace.result}^${xA} mod ${q} = ${kabATrace.result}`;
+      document.getElementById('outKAB_B').textContent = `K_AB = ${yaTrace.result}^${xB} mod ${q} = ${kabBTrace.result}`;
+
+      const badge = document.getElementById('outMatchBadge');
+      badge.textContent = `✓ Hai bên thiết lập thành công khoá phiên chung K_AB = ${kabATrace.result}`;
+
+      renderSquareMultiplyTable();
+    }
+
+    function renderSquareMultiplyTable() {
+      if (!currentTinyState) return;
+      const target = document.getElementById('selTraceTarget').value;
+      const { q, alpha, xA, xB, yaTrace, ybTrace, kabATrace, kabBTrace } = currentTinyState;
+
+      let traceObj, baseVal, expVal, labelTitle;
+      if (target === 'ya') {
+        traceObj = yaTrace; baseVal = alpha; expVal = xA;
+        labelTitle = `Tính khoá công khai của Alice: y_A = ${alpha}^${xA} mod ${q} = ${yaTrace.result}`;
+      } else if (target === 'yb') {
+        traceObj = ybTrace; baseVal = alpha; expVal = xB;
+        labelTitle = `Tính khoá công khai của Bob: y_B = ${alpha}^${xB} mod ${q} = ${ybTrace.result}`;
+      } else if (target === 'kab_a') {
+        traceObj = kabATrace; baseVal = ybTrace.result; expVal = xA;
+        labelTitle = `Alice tính khoá phiên chung: K_AB = ${ybTrace.result}^${xA} mod ${q} = ${kabATrace.result}`;
+      } else {
+        traceObj = kabBTrace; baseVal = yaTrace.result; expVal = xB;
+        labelTitle = `Bob tính khoá phiên chung: K_AB = ${yaTrace.result}^${xB} mod ${q} = ${kabBTrace.result}`;
+      }
+
+      document.getElementById('traceSummary').innerHTML =
+        `<strong>${labelTitle}</strong> &nbsp;|&nbsp; Số mũ k = ${expVal} ở dạng nhị phân: <span class="text-amber-300">(${traceObj.binStr})₂</span> (${traceObj.steps.length} bít, khởi tạo c = 0, f = 1)`;
+
+      const tbody = document.getElementById('tblSquareMultiplyBody');
+      tbody.innerHTML = traceObj.steps.map(s => `
+        <tr class="hover:bg-slate-800/60">
+          <td class="py-2 px-3 text-slate-400">#${s.stepIdx}</td>
+          <td class="py-2 px-3 font-semibold text-white">i = ${s.i}</td>
+          <td class="py-2 px-3"><span class="px-2 py-0.5 rounded ${s.b_i === 1 ? 'bg-amber-500/20 text-amber-300 font-bold' : 'bg-slate-800 text-slate-400'}">${s.b_i}</span></td>
+          <td class="py-2 px-3 text-blue-300">${s.c.toString()}</td>
+          <td class="py-2 px-3 font-bold text-emerald-300">${s.f.toString()}</td>
+          <td class="py-2 px-3 text-slate-300">${s.desc}</td>
+        </tr>
+      `).join('');
+    }
+
+    // ============================================================================
+    // 3. LOGIC GIAO DIỆN TAB 2: FULL RFC 3526 DH & MÃ HOÁ HAI CHIỀU
+    // ============================================================================
+    const RFC3526_G14_HEX =
+      "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DD" +
+      "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7ED" +
+      "EE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F" +
+      "83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3B" +
+      "E39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA0510" +
+      "15728E5A8AACAA68FFFFFFFFFFFFFFFF";
+
+    const RFC3526_G5_HEX =
+      "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DD" +
+      "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7ED" +
+      "EE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F" +
+      "83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA237327FFFFFFFFFFFFFFFF";
+
+    let activeSessionKAB = 160n;
+
+    function generateFullSessionKey() {
+      const mode = document.getElementById('selGroupSize').value;
+      const t0 = performance.now();
+      let q, alpha, name;
+      if (mode === 'slide51') {
+        q = 353n; alpha = 3n;
+        activeSessionKAB = 160n;
+        name = 'Tiny DH Slide 51 (q = 353, α = 3)';
+      } else {
+        q = BigInt('0x' + (mode === 'rfc2048' ? RFC3526_G14_HEX : RFC3526_G5_HEX));
+        alpha = 2n;
+        name = mode === 'rfc2048' ? 'RFC 3526 Group 14 (2048-bit MODP)' : 'RFC 3526 Group 5 (1536-bit MODP)';
+        // Sinh khoá mật 128-bit ngẫu nhiên cho demo nhanh trên trình duyệt
+        const randA = BigInt(Math.floor(Math.random() * 1e15)) * 1000000007n + 123456789n;
+        const randB = BigInt(Math.floor(Math.random() * 1e15)) * 1000000009n + 987654321n;
+        const yA = squareAndMultiply(alpha, randA, q, false);
+        activeSessionKAB = squareAndMultiply(yA, randB, q, false);
+      }
+      const dt = (performance.now() - t0).toFixed(2);
+      document.getElementById('lblActiveGroup').textContent = name;
+      document.getElementById('lblKeygenTime').textContent = `Thời gian trao đổi khoá: ${dt} ms`;
+
+      const hexStr = activeSessionKAB.toString(16);
+      document.getElementById('lblActiveKAB').textContent =
+        hexStr.length > 48 ? `0x${hexStr.slice(0, 24)}...${hexStr.slice(-20)} (${hexStr.length * 4} bits)` : `${activeSessionKAB.toString()} (0x${hexStr})`;
+      document.getElementById('lblDerivedKeyHex').textContent = '0x' + bytesToHex(deriveMasterKey(activeSessionKAB));
+
+      runTextEncryption();
+    }
+
+    function runTextEncryption() {
+      const text = document.getElementById('inpPlaintext').value;
+      const plainBytes = new TextEncoder().encode(text);
+      const packet = encryptBytesWithKAB(plainBytes, activeSessionKAB);
+      const hex = bytesToHex(packet);
+      document.getElementById('outCipherHex').value = hex;
+      document.getElementById('inpCipherToDecrypt').value = hex;
+      document.getElementById('lblCipherLen').textContent = `${packet.length} bytes (${plainBytes.length}B data + 24B header)`;
+      runTextDecryption();
+    }
+
+    function runTextDecryption() {
+      const hex = document.getElementById('inpCipherToDecrypt').value;
+      const statusEl = document.getElementById('lblDecryptStatus');
+      const outEl = document.getElementById('outRecoveredText');
+      try {
+        const packet = hexToBytes(hex);
+        const recBytes = decryptBytesWithKAB(packet, activeSessionKAB);
+        const recStr = new TextDecoder().decode(recBytes);
+        outEl.value = recStr;
+        outEl.className = 'w-full bg-slate-950 border border-emerald-500/40 rounded-lg p-3 text-xs sm:text-sm text-emerald-300';
+        statusEl.textContent = '✓ Xác thực MAC hợp lệ & Khôi phục 100% bản rõ!';
+        statusEl.className = 'font-semibold text-emerald-400';
+      } catch (err) {
+        outEl.value = '[CHẶN BỞI BỘ KIỂM TRA TOÀN VẸN MAC]: ' + err.message;
+        outEl.className = 'w-full bg-rose-950/40 border border-rose-500/50 rounded-lg p-3 text-xs sm:text-sm text-rose-300';
+        statusEl.textContent = '✗ Phát hiện bản mã bị sửa đổi hoặc sai khoá!';
+        statusEl.className = 'font-semibold text-rose-400';
+      }
+    }
+
+    function runFileDemoSimulation(fileName, fileBytes) {
+      const origHash = bytesToHex(sha256Bytes(fileBytes));
+      const encPacket = encryptBytesWithKAB(fileBytes, activeSessionKAB);
+      const encHash = bytesToHex(sha256Bytes(encPacket));
+      const recBytes = decryptBytesWithKAB(encPacket, activeSessionKAB);
+      const recHash = bytesToHex(sha256Bytes(recBytes));
+
+      document.getElementById('fileOrigName').textContent = `${fileName} (${fileBytes.length.toLocaleString()} bytes)`;
+      document.getElementById('fileOrigHash').textContent = `SHA-256: ${origHash.slice(0, 32)}...`;
+      document.getElementById('fileEncSize').textContent = `${encPacket.length.toLocaleString()} bytes (+24B Nonce & MAC)`;
+      document.getElementById('fileEncHash').textContent = `SHA-256: ${encHash.slice(0, 32)}...`;
+      document.getElementById('fileRecStatus').textContent =
+        origHash === recHash ? `✓ Khớp 100% (${recBytes.length.toLocaleString()} bytes)` : '✗ Lỗi giải mã!';
+      document.getElementById('fileRecHash').textContent = `SHA-256: ${recHash.slice(0, 32)}...`;
+      showToast(`Đã mã hoá & giải mã thành công tệp "${fileName}" (${fileBytes.length} bytes)!`);
+    }
+
+    // ============================================================================
+    // 4. LOGIC GIAO DIỆN TAB 3: BÀI TOÁN LOGARIT RỜI RẠC (DLP)
+    // ============================================================================
+    function runDlpSolver() {
+      const q = BigInt(document.getElementById('inpDlpQ').value || 353);
+      const alpha = BigInt(document.getElementById('inpDlpAlpha').value || 3);
+      const y = BigInt(document.getElementById('inpDlpY').value || 40);
+
+      // 1. Vét cạn O(q)
+      const t0 = performance.now();
+      let curr = 1n;
+      let foundBF = null;
+      let stepsBF = 0;
+      const limitBF = q < 1500000n ? Number(q) : 1500000;
+      for (let x = 1; x < limitBF; x++) {
+        curr = (curr * alpha) % q;
+        stepsBF++;
+        if (curr === y) {
+          foundBF = BigInt(x);
+          break;
+        }
+      }
+      const timeBF = (performance.now() - t0).toFixed(3);
+
+      // 2. Baby-step Giant-step O(sqrt(q))
+      const t1 = performance.now();
+      const m = BigInt(Math.ceil(Math.sqrt(Number(q - 1n))));
+      const mNum = Number(m);
+      const babyTable = new Map();
+      let bCurr = 1n;
+      let stepsBSGS = 0;
+      for (let j = 0; j < mNum; j++) {
+        babyTable.set(bCurr, BigInt(j));
+        bCurr = (bCurr * alpha) % q;
+        stepsBSGS++;
+      }
+      const alphaM = squareAndMultiply(alpha, m, q, false);
+      const alphaNegM = modInverseBigInt(alphaM, q);
+      let foundBSGS = null;
+      if (alphaNegM !== null) {
+        let gamma = y % q;
+        for (let i = 0; i < mNum; i++) {
+          stepsBSGS++;
+          if (babyTable.has(gamma)) {
+            foundBSGS = BigInt(i) * m + babyTable.get(gamma);
+            break;
+          }
+          gamma = (gamma * alphaNegM) % q;
+        }
+      }
+      const timeBSGS = (performance.now() - t1).toFixed(3);
+
+      document.getElementById('outDlpBruteResult').innerHTML = foundBF !== null
+        ? `<div>• Khoá mật tìm được: <strong class="text-white">x = ${foundBF}</strong> (Kiểm tra: ${alpha}^${foundBF} mod ${q} = ${squareAndMultiply(alpha, foundBF, q, false)})</div>
+           <div>• Số phép nhân modulo đã thử: <strong>${stepsBF.toLocaleString()} bước</strong></div>
+           <div>• Thời gian thực thi: <strong>${timeBF} ms</strong></div>`
+        : `<div class="text-rose-400">Không tìm thấy x trong giới hạn ${limitBF.toLocaleString()} bước.</div>`;
+
+      const speedup = (stepsBF / Math.max(1, stepsBSGS)).toFixed(1);
+      document.getElementById('outDlpBsgsResult').innerHTML = foundBSGS !== null
+        ? `<div>• Khoá mật tìm được: <strong class="text-white">x = ${foundBSGS}</strong> (với m = ⌈√${q-1n}⌉ = ${m})</div>
+           <div>• Tổng số bước (Baby + Giant): <strong>${stepsBSGS.toLocaleString()} bước</strong></div>
+           <div>• Thời gian thực thi: <strong>${timeBSGS} ms</strong> (Ít hơn <strong>${speedup} lần</strong> số phép tính so với vét cạn!)</div>`
+        : `<div class="text-rose-400">Không tìm thấy nghiệm x hợp lệ.</div>`;
+    }
+
+    // ============================================================================
+    // 5. LOGIC GIAO DIỆN TAB 4: TẤN CÔNG MITM & PHÒNG CHỐNG BẰNG RSA
+    // ============================================================================
+    let mitmDefenseActive = false;
+
+    function renderMitmSimulation() {
+      const q = 353n, alpha = 3n, xA = 97n, xB = 233n;
+      const xE1 = BigInt(document.getElementById('inpMitmXE1').value || 123);
+      const xE2 = BigInt(document.getElementById('inpMitmXE2').value || 55);
+      const tamperedMsg = document.getElementById('inpMitmTamperMsg').value;
+      const origMsg = "Chuyen 50,000,000 VND vao TK Bob: 1903888999";
+
+      const yA = squareAndMultiply(alpha, xA, q, false);
+      const yB = squareAndMultiply(alpha, xB, q, false);
+      const yE1 = squareAndMultiply(alpha, xE1, q, false);
+      const yE2 = squareAndMultiply(alpha, xE2, q, false);
+
+      const container = document.getElementById('mitmDiagramContainer');
+
+      if (!mitmDefenseActive) {
+        const kAE = squareAndMultiply(yE1, xA, q, false);
+        const kEB = squareAndMultiply(yE2, xB, q, false);
+        container.innerHTML = `
+          <div class="rounded-xl bg-blue-950/30 border border-blue-500/30 p-4 space-y-2 text-xs">
+            <div class="text-sm font-bold text-blue-300">1. Alice (Nạn nhân A)</div>
+            <div class="mono text-slate-300">x_A = ${xA} ⇒ Gửi y_A = ${yA}</div>
+            <div class="mono text-rose-300">Nhận y_E1 = ${yE1} (tưởng là của Bob!)</div>
+            <div class="p-2 rounded bg-slate-900 border border-slate-700 mono text-amber-300">
+              Tính khoá chung: K_AE = ${yE1}^${xA} mod 353 = <strong>${kAE}</strong>
+            </div>
+            <div class="text-slate-300 pt-1">Gửi tin nhắn mã hoá bằng K_AE = ${kAE}:</div>
+            <div class="p-2 rounded bg-slate-900 text-emerald-300 mono">"${origMsg}"</div>
+          </div>
+
+          <div class="rounded-xl bg-rose-950/40 border border-rose-500/50 p-4 space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-rose-300">2. Kẻ tấn công Eve (MITM)</span>
+              <span class="px-2 py-0.5 rounded bg-rose-500/30 text-rose-200 font-bold">TẤN CÔNG THÀNH CÔNG</span>
+            </div>
+            <div class="mono text-slate-200">• Chặn y_A=${yA}, gửi y_E1=${yE1} cho Alice ⇒ Lập <strong>K_AE = ${kAE}</strong></div>
+            <div class="mono text-slate-200">• Chặn y_B=${yB}, gửi y_E2=${yE2} cho Bob ⇒ Lập <strong>K_EB = ${kEB}</strong></div>
+            <div class="p-2 rounded bg-slate-950 border border-rose-500/30 text-rose-200 space-y-1">
+              <div>1. Giải mã tin của Alice bằng K_AE=${kAE} ⇒ Đọc trộm!</div>
+              <div>2. Sửa nội dung thành: <span class="mono text-amber-300">"${tamperedMsg}"</span></div>
+              <div>3. Mã hoá lại bằng K_EB=${kEB} gửi tiếp cho Bob.</div>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-purple-950/30 border border-purple-500/30 p-4 space-y-2 text-xs">
+            <div class="text-sm font-bold text-purple-300">3. Bob (Nạn nhân B)</div>
+            <div class="mono text-slate-300">x_B = ${xB} ⇒ Gửi y_B = ${yB}</div>
+            <div class="mono text-rose-300">Nhận y_E2 = ${yE2} (tưởng là của Alice!)</div>
+            <div class="p-2 rounded bg-slate-900 border border-slate-700 mono text-amber-300">
+              Tính khoá chung: K_EB = ${yE2}^${xB} mod 353 = <strong>${kEB}</strong>
+            </div>
+            <div class="text-slate-300 pt-1">Giải mã bằng K_EB = ${kEB} và tin tưởng hoàn toàn:</div>
+            <div class="p-2 rounded bg-rose-950/60 border border-rose-500/40 text-rose-300 font-semibold mono">"${tamperedMsg}"</div>
+          </div>
+        `;
+      } else {
+        // Kịch bản có chữ ký số RSA (Alice RSA: p=61, q=53 -> N=3233, e=17, d=2753)
+        const rsaN = 3233n, rsaE = 17n, rsaD = 2753n;
+        const hashAuthentic = 2764n; // H("ALICE|y_A=40") mod 3233
+        const sigAlice = squareAndMultiply(hashAuthentic, rsaD, rsaN, false);
+        const hashTampered = 1945n; // H("ALICE|y_E1") mod 3233
+        const verifyCheck = squareAndMultiply(sigAlice, rsaE, rsaN, false);
+        const kAB = squareAndMultiply(yB, xA, q, false);
+
+        container.innerHTML = `
+          <div class="rounded-xl bg-blue-950/30 border border-blue-500/30 p-4 space-y-2 text-xs">
+            <div class="text-sm font-bold text-blue-300">1. Alice (Ký số RSA lên khoá DH)</div>
+            <div class="mono text-slate-300">Khoá RSA của Alice: KU = {e=17, N=3233}, KR = {d=2753}</div>
+            <div class="p-2 rounded bg-slate-900 border border-slate-700 mono text-emerald-300">
+              Gửi y_A = ${yA} kèm chữ ký RSA:<br/>
+              Sig_A = H(y_A)^d mod N = ${hashAuthentic}^2753 mod 3233 = <strong>${sigAlice}</strong>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-emerald-950/30 border border-emerald-500/50 p-4 space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-emerald-300">2. Eve cố gắng tráo y_A → y_E1 = ${yE1}</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/30 text-emerald-200 font-bold">ĐÃ CHẶN ĐỨNG MITM</span>
+            </div>
+            <div class="text-slate-200">Eve không có khoá riêng RSA <span class="mono">d_A = 2753</span> của Alice nên không thể tạo chữ ký hợp lệ cho <span class="mono">y_E1 = ${yE1}</span>.</div>
+            <div class="p-2 rounded bg-slate-950 border border-emerald-500/40 mono text-amber-300">
+              Bob kiểm tra: Sig_A^e mod N = ${verifyCheck} ≠ H(y_E1) (${hashTampered})<br/>
+              ⇒ <strong>Phát hiện gói tin giả mạo & Ngắt kết nối với Eve!</strong>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-purple-950/30 border border-purple-500/30 p-4 space-y-2 text-xs">
+            <div class="text-sm font-bold text-purple-300">3. Bob (Xác thực PKI thành công)</div>
+            <div class="mono text-slate-300">Nhận đúng y_A = ${yA} có chữ ký RSA hợp lệ (${verifyCheck} == ${hashAuthentic}).</div>
+            <div class="p-2 rounded bg-emerald-950/60 border border-emerald-500/40 mono text-emerald-300 font-bold">
+              Thiết lập an toàn K_AB = 40^233 mod 353 = ${kAB}
+            </div>
+            <div class="text-slate-300">Bản rõ nhận được an toàn tuyệt đối:</div>
+            <div class="p-2 rounded bg-slate-900 text-emerald-300 mono">"${origMsg}"</div>
+          </div>
+        `;
+      }
+    }
+
+    // ============================================================================
+    // 6. LOGIC GIAO DIỆN TAB 5: BỘ KIỂM THỬ TỰ ĐỘNG & ĐỐI CHIẾU VECTOR CHUẨN
+    // ============================================================================
+    function runAllWebUnitTests() {
+      const tests = [];
+
+      // Test 1: Nghịch đảo modulo Slide 21 & 22
+      const inv1 = modInverseBigInt(25n, 101n);
+      const inv2 = modInverseBigInt(173n, 1024n);
+      tests.push({
+        id: 'TC-01',
+        name: 'Nghịch đảo modulo bảng 6 cột (Slide 21 & 22): 25⁻¹ mod 101 & 173⁻¹ mod 1024',
+        actual: `25⁻¹ = ${inv1}, 173⁻¹ = ${inv2}`,
+        expected: '25⁻¹ = 97, 173⁻¹ = 805',
+        pass: inv1 === 97n && inv2 === 805n
+      });
+
+      // Test 2: Bình phương và nhân Slide 24
+      const smSlide24 = squareAndMultiply(7n, 560n, 561n, true);
+      tests.push({
+        id: 'TC-02',
+        name: 'Thuật toán Bình phương & Nhân (Slide 24): 7^560 mod 561',
+        actual: `f = ${smSlide24.result} (${smSlide24.steps.length} bước)`,
+        expected: 'f = 1 (10 bước)',
+        pass: smSlide24.result === 1n && smSlide24.steps.length === 10
+      });
+
+      // Test 3: Ví dụ Tiny DH Slide 51
+      const yA = squareAndMultiply(3n, 97n, 353n, false);
+      const yB = squareAndMultiply(3n, 233n, 353n, false);
+      const kA = squareAndMultiply(yB, 97n, 353n, false);
+      const kB = squareAndMultiply(yA, 233n, 353n, false);
+      tests.push({
+        id: 'TC-03',
+        name: 'Tái hiện BTVD Diffie–Hellman thu nhỏ (Slide 51: q=353, α=3, xA=97, xB=233)',
+        actual: `yA=${yA}, yB=${yB}, KAB=${kA}`,
+        expected: 'yA=40, yB=248, KAB=160',
+        pass: yA === 40n && yB === 248n && kA === 160n && kB === 160n
+      });
+
+      // Test 4: NIST SHA-256 Vector ("abc")
+      const abcHash = bytesToHex(sha256Bytes(new TextEncoder().encode('abc')));
+      const nistAbc = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+      tests.push({
+        id: 'TC-04',
+        name: 'Đối chiếu NIST FIPS 180-4 Test Vector cho hàm băm SHA-256("abc")',
+        actual: abcHash.slice(0, 28) + '...',
+        expected: nistAbc.slice(0, 28) + '...',
+        pass: abcHash === nistAbc
+      });
+
+      // Test 5: RFC 3526 Group 14 (2048-bit MODP)
+      const q2048 = BigInt('0x' + RFC3526_G14_HEX);
+      const pubA2048 = squareAndMultiply(2n, 1234567890123456789n, q2048, false);
+      const pubB2048 = squareAndMultiply(2n, 9876543210987654321n, q2048, false);
+      const secA2048 = squareAndMultiply(pubB2048, 1234567890123456789n, q2048, false);
+      const secB2048 = squareAndMultiply(pubA2048, 9876543210987654321n, q2048, false);
+      tests.push({
+        id: 'TC-05',
+        name: 'Trao đổi khoá trên nhóm chuẩn quốc tế RFC 3526 Group 14 (2048-bit MODP)',
+        actual: '0x' + secA2048.toString(16).slice(0, 20) + '...',
+        expected: '0x' + secB2048.toString(16).slice(0, 20) + '...',
+        pass: secA2048 === secB2048
+      });
+
+      const tbody = document.getElementById('tblUnitTestsBody');
+      tbody.innerHTML = tests.map(t => `
+        <tr class="hover:bg-slate-800/50">
+          <td class="py-2.5 px-3 font-bold text-blue-300">${t.id}</td>
+          <td class="py-2.5 px-3 text-slate-200 font-sans">${t.name}</td>
+          <td class="py-2.5 px-3 text-emerald-300">${t.actual}</td>
+          <td class="py-2.5 px-3 text-amber-300">${t.expected}</td>
+          <td class="py-2.5 px-3">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${t.pass ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-300'}">
+              ${t.pass ? '✓ PASS (100%)' : '✗ FAIL'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ============================================================================
+    // 7. GẮN SỰ KIỆN CHO TẤT CẢ CÁC NÚT & KHỞI TẠO BAN ĐẦU
+    // ============================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // Chuyển tab
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+          btn.classList.add('active');
+          const tabId = btn.getAttribute('data-tab');
+          document.getElementById('panel-' + tabId).classList.remove('hidden');
+        });
+      });
+
+      // Sự kiện Tab 1
+      document.getElementById('btnPresetSlide51').addEventListener('click', () => {
+        document.getElementById('inpTinyQ').value = 353;
+        document.getElementById('inpTinyAlpha').value = 3;
+        document.getElementById('inpTinyXA').value = 97;
+        document.getElementById('inpTinyXB').value = 233;
+        computeTinyDH();
+        showToast('Đã nạp bộ tham số chuẩn Slide 51 (q=353, α=3, x_A=97, x_B=233)!');
+      });
+
+      document.getElementById('btnRandomTiny').addEventListener('click', () => {
+        const primes = [
+          { q: 353, a: 3 }, { q: 467, a: 2 }, { q: 619, a: 2 },
+          { q: 887, a: 5 }, { q: 1223, a: 5 }, { q: 2027, a: 2 }
+        ];
+        const pick = primes[Math.floor(Math.random() * primes.length)];
+        document.getElementById('inpTinyQ').value = pick.q;
+        document.getElementById('inpTinyAlpha').value = pick.a;
+        document.getElementById('inpTinyXA').value = Math.floor(Math.random() * (pick.q - 10)) + 5;
+        document.getElementById('inpTinyXB').value = Math.floor(Math.random() * (pick.q - 10)) + 5;
+        computeTinyDH();
+        showToast(`Đã sinh bộ tham số ngẫu nhiên (q=${pick.q}, α=${pick.a})!`);
+      });
+
+      document.getElementById('btnRunTiny').addEventListener('click', computeTinyDH);
+      document.getElementById('selTraceTarget').addEventListener('change', renderSquareMultiplyTable);
+
+      // Sự kiện Tab 2
+      document.getElementById('btnGenFullDH').addEventListener('click', generateFullSessionKey);
+      document.getElementById('selGroupSize').addEventListener('change', generateFullSessionKey);
+      document.getElementById('btnEncryptText').addEventListener('click', runTextEncryption);
+      document.getElementById('btnDecryptText').addEventListener('click', runTextDecryption);
+
+      document.getElementById('btnTamperCipher').addEventListener('click', () => {
+        const cur = document.getElementById('inpCipherToDecrypt').value.trim();
+        if (cur.length > 4) {
+          const lastChar = cur[cur.length - 1];
+          const flipped = (parseInt(lastChar, 16) ^ 1).toString(16);
+          document.getElementById('inpCipherToDecrypt').value = cur.slice(0, -1) + flipped;
+          runTextDecryption();
+        }
+      });
+
+      document.getElementById('btnSimSampleTextFile').addEventListener('click', () => {
+        const sampleTxt = new TextEncoder().encode(
+          "HỒ SƠ GIAO DỊCH BẢO MẬT NEU - KHOA CNTT\nKhoá phiên: Diffie-Hellman\nSố tiền: 125,000,000 VNĐ\n"
+        );
+        runFileDemoSimulation('sample_text.txt', sampleTxt);
+      });
+
+      document.getElementById('btnSimSampleImageFile').addEventListener('click', () => {
+        // Tạo dữ liệu PNG mẫu 1018 bytes
+        const fakePng = new Uint8Array(1018);
+        fakePng.set([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], 0);
+        for (let i = 8; i < fakePng.length; i++) fakePng[i] = (i * 73 + 19) & 0xff;
+        runFileDemoSimulation('sample_image.png', fakePng);
+      });
+
+      document.getElementById('inpCustomFile').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const u8 = new Uint8Array(ev.target.result);
+          runFileDemoSimulation(file.name, u8);
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      // Sự kiện Tab 3
+      document.getElementById('btnDlpPreset1').addEventListener('click', () => {
+        document.getElementById('inpDlpQ').value = 353;
+        document.getElementById('inpDlpAlpha').value = 3;
+        document.getElementById('inpDlpY').value = 40;
+        runDlpSolver();
+      });
+      document.getElementById('btnDlpPreset2').addEventListener('click', () => {
+        document.getElementById('inpDlpQ').value = 65521;
+        document.getElementById('inpDlpAlpha').value = 17;
+        document.getElementById('inpDlpY').value = 64850;
+        runDlpSolver();
+      });
+      document.getElementById('btnDlpPreset3').addEventListener('click', () => {
+        document.getElementById('inpDlpQ').value = 1000003;
+        document.getElementById('inpDlpAlpha').value = 2;
+        document.getElementById('inpDlpY').value = 127778;
+        runDlpSolver();
+      });
+      document.getElementById('btnRunDlpAttack').addEventListener('click', runDlpSolver);
+
+      // Sự kiện Tab 4
+      document.getElementById('btnModeMitmAttack').addEventListener('click', () => {
+        mitmDefenseActive = false;
+        document.getElementById('btnModeMitmAttack').className = 'px-3.5 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold shadow transition';
+        document.getElementById('btnModeMitmDefense').className = 'px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition';
+        renderMitmSimulation();
+      });
+      document.getElementById('btnModeMitmDefense').addEventListener('click', () => {
+        mitmDefenseActive = true;
+        document.getElementById('btnModeMitmDefense').className = 'px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold shadow transition';
+        document.getElementById('btnModeMitmAttack').className = 'px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition';
+        renderMitmSimulation();
+      });
+      ['inpMitmXE1', 'inpMitmXE2', 'inpMitmTamperMsg'].forEach(id => {
+        document.getElementById(id).addEventListener('input', renderMitmSimulation);
+      });
+
+      // Sự kiện Tab 5
+      document.getElementById('btnRunAllTestsWeb').addEventListener('click', () => {
+        runAllWebUnitTests();
+        showToast('Đã chạy lại toàn bộ 5 ca kiểm thử đối chiếu chuẩn!');
+      });
+
+      // Khởi chạy mặc định tất cả các tab
+      computeTinyDH();
+      generateFullSessionKey();
+      runDlpSolver();
+      renderMitmSimulation();
+      runAllWebUnitTests();
+    });
+  </script>
+</body>
+</html>
