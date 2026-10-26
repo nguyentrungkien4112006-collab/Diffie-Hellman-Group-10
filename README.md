@@ -91,7 +91,7 @@ python3 tests/test_diffie_hellman.py
 ```
 
 ### Cách 4: Chạy Giao diện Đồ hoạ Web App 
-Mở trực tiếp tệp `web_demo/index.html` bằng trình duyệt bất kỳ để thao tác trực quan trên 5 tab chức năng.
+Mở trực tiếp tệp `(https://nguyentrungkien4112006-collab.github.io/Diffie-Hellman-Group-10/)` bằng trình duyệt bất kỳ để thao tác trực quan trên 5 tab chức năng.
 
 - **Tài liệu tham khảo:**
   1. ThS. Nguyễn Quốc Thái, *Bài giảng An toàn và Bảo mật Thông tin – Chương 3: Mã hoá khoá công khai*, Khoa CNTT, Trường Đại học Kinh tế Quốc dân (NEU).
