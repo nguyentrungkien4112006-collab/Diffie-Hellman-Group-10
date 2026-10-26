@@ -18,7 +18,7 @@
 
 2. **Đầy đủ cả hai phiên bản (Phiên bản thu nhỏ & Phiên bản đầy đủ chuẩn RFC 3526):**
    - **Phiên bản thu nhỏ (Tiny Diffie–Hellman)
-   - **Phiên bản đầy đủ (Standard Diffie–Hellman):** Cài đặt các nhóm MODP chuẩn quốc tế **RFC 3526** gồm **Group 5 (1536-bit prime)** và **Group 14 (2048-bit prime)** cùng khả năng sinh số nguyên tố an toàn (Safe Prime) động.
+   - **Phiên bản đầy đủ (Standard Diffie–Hellman):** Cài đặt các nhóm MODP chuẩn quốc tế **RFC 3526** gồm **Group 5 (1536-bit prime)** và **Group 14 (2048-bit prime)** cùng khả năng sinh số nguyên tố an toàn động.
 
 3. **Có đủ cả hai chiều Mã hoá & Giải mã trên Văn bản và Tệp dữ liệu thật:**
    - Do bản thân Diffie–Hellman là giao thức thiết lập khoá phiên chung, nhóm đã tự cài đặt từ đầu hàm băm **SHA-256 (chuẩn FIPS 180-4)** để dẫn xuất dòng khoá và mã xác thực thông điệp.
@@ -39,12 +39,12 @@
 
 ```text
 diffie-hellman-key-exchange/
-├── core/                           # Package lõi thuật toán (100% tự cài đặt từ đầu)
+├── core/                           # Package lõi thuật toán 
 │   ├── __init__.py                 # Export các hàm và lớp của hệ thống
 │   ├── math_utils.py               # Euclid, Euclid mở rộng, Nghịch đảo bảng 6 cột, Bình phương & Nhân, Miller-Rabin
-│   ├── diffie_hellman.py           # Tiny DH (Slide 51), Full DH (RFC 3526 1536/2048-bit), Thám mã DLP (Brute-force & BSGS)
+│   ├── diffie_hellman.py           # Tiny DH, Full DH (RFC 3526 1536/2048-bit), Thám mã DLP 
 │   ├── cipher_stream.py            # SHA-256 từ đầu + Mã hoá/Giải mã 2 chiều văn bản & tệp (.txt, .png) từ khoá K_AB
-│   └── mitm_attack.py              # Mô phỏng tấn công MITM (Eve) & Phòng chống bằng Chữ ký số RSA (Slide 41-44)
+│   └── mitm_attack.py              # Mô phỏng tấn công MITM (Eve) & Phòng chống bằng Chữ ký số RSA 
 ├── tests/                          # Bộ kiểm thử tự động và đối chiếu chuẩn
 │   ├── __init__.py
 │   └── test_diffie_hellman.py      # 5 ca kiểm thử tự viết + đối chiếu Slide, NIST SHA-256, RFC 3526 & Python stdlib
@@ -54,9 +54,9 @@ diffie-hellman-key-exchange/
 ├── web_demo/                       # Giao diện Web App tương tác trực quan (chạy độc lập trên trình duyệt)
 │   └── index.html                  # Ứng dụng Web 5 tab: Tiny DH, Full DH & File Cipher, DLP, MITM & RSA, Unit Tests
 ├── main.py                         # Chương trình chính có Menu CLI tương tác & Benchmark hiệu năng
-├── requirements.txt                # Thông tin môi trường (Chỉ dùng Python 3.8+ Standard Library, không phụ thuộc ngoài)
+├── requirements.txt                # Thông tin môi trường: Chỉ dùng Python 3.8 + Standard Library, không phụ thuộc ngoài
 ├── .gitignore                      # Cấu hình bỏ qua file rác khi đẩy lên GitHub
-└── README.md                       # Tài liệu hướng dẫn cài đặt, chạy demo và nộp bài GitHub
+└── README.md                       # Tài liệu hướng dẫn cài đặt, chạy demo
 ```
 
 ---
