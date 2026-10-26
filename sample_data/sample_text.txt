@@ -1,0 +1,15 @@
+====================================================================
+HỒ SƠ GIAO DỊCH BẢO MẬT - KHOA CÔNG NGHỆ THÔNG TIN (ĐH KINH TẾ QUỐC DÂN)
+====================================================================
+Môn học: An toàn và Bảo mật Thông tin
+Đề tài: Thực thi và Demo Trao đổi khoá Diffie-Hellman (Chương 3)
+--------------------------------------------------------------------
+1. Thông tin giao dịch:
+   - Người gửi (Alice): Phòng Tài chính Kế toán - NEU
+   - Người nhận (Bob) : Trung tâm Công nghệ Thông tin - NEU
+   - Số tiền uỷ nhiệm : 125,000,000 VNĐ (Một trăm hai mươi lăm triệu đồng)
+   - Mã xác thực OTP  : DH-2026-NEU-998877
+2. Cam kết bảo mật:
+   - Khoá phiên K_AB được thiết lập qua giao thức Diffie-Hellman.
+   - Bản rõ sau khi giải mã phải khớp 100% từng byte và mã băm SHA-256.
+====================================================================

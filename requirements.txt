@@ -1,0 +1,3 @@
+# Dự án sử dụng 100% Python Standard Library cho toàn bộ thuật toán lõi (core/) và kiểm thử (tests/).
+# Không sử dụng thư viện mật mã bên ngoài theo đúng yêu cầu của đề bài (tự cài đặt thuật toán từ đầu).
+# Yêu cầu phiên bản: Python >= 3.8
