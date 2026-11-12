@@ -92,9 +92,3 @@ python3 tests/test_diffie_hellman.py
 
 ### Cách 4: Chạy Giao diện Đồ hoạ Web App 
 Mở trực tiếp tệp `(https://nguyentrungkien4112006-collab.github.io/Diffie-Hellman-Group-10/)` bằng trình duyệt bất kỳ để thao tác trực quan trên 5 tab chức năng.
-
-- **Tài liệu tham khảo:**
-  1. ThS. Nguyễn Quốc Thái, *Bài giảng An toàn và Bảo mật Thông tin – Chương 3: Mã hoá khoá công khai*, Khoa CNTT, Trường Đại học Kinh tế Quốc dân (NEU).
-  2. Whitfield Diffie & Martin E. Hellman (1976), *"New Directions in Cryptography"*, IEEE Transactions on Information Theory, Vol. IT-22, No. 6, pp. 644–654.
-  3. IETF RFC 3526 (2003), *"More Modular Exponential (MODP) Diffie-Hellman groups for Internet Key Exchange (IKE)"*.
-  4. NIST FIPS PUB 180-4 (2015), *"Secure Hash Standard (SHS)"*.
